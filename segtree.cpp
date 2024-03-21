@@ -1,4 +1,4 @@
-#include <bits/stdc++.h>
+#include <template.cpp>
 
 // point range segment tree, zero-based indexing
 template<typename T, T (*op)(T, T), T (*up)(T, T), T e>
