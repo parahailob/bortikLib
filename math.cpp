@@ -230,3 +230,25 @@ long long grey_reverse(long long val){
     for(int j = 61; j >= 0; j--) {k |= (val & (1 << j)) ^ (order << j); order ^= (val >> j) & 1;}
     return k;
 }
+
+template<typename T>
+struct Combinatorics {
+    vector<T> fact;
+
+    Comb(int n) {
+        fact.assign(n+1);
+        fact[0] = T{1};
+        fact[1] = T{1};
+        for(int i = 2; i <= n; i++){
+            fact[i] = fact[i-1] * T{i};
+        }
+    }
+
+    T comb(int n, int r){
+        return fact[n] / (fact[r] * fact[n-r]);
+    }
+
+    T perm(int n){
+        return fact[n];
+    }
+};
