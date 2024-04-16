@@ -252,3 +252,54 @@ struct Combinatorics {
         return fact[n];
     }
 };
+
+
+// returns a vector [a0; a1, ...] of repeated infinite fraction of sqrt(D)
+template<typename T>
+std::vector<T> continued_fraction(T D){
+    std::vector<T> a, p, q, P, Q;
+    a.push_back(T(sqrt(D)));
+    p.push_back(a[0]);
+    q.push_back(0);
+    P.push_back(0);
+    Q.push_back(1);
+    while(a.back() != a[0]*2){
+        P.push_back(a.back()*Q.back()-P.back());
+        Q.push_back((D-P.back()*P.back())/Q.back());
+        a.push_back((a[0]+P.back())/Q.back());
+    }
+    return a;
+}
+
+// the solution to Pell`s Equation in smallest integers
+template<typename T>
+std::pair<T,T> pell_smallest(T D){
+    auto a = continued_fraction(D);
+    int r = a.size()-2;
+    if(r%2==1){
+        std::vector<T> p, q;
+        p.push_back(a[0]);
+        p.push_back(a[0]*a[1]+1);
+        q.push_back(1);
+        q.push_back(a[1]);
+        for(int n = 2; n <= r; n++) p.push_back(a[n] * p[n-1] + p[n-2]);
+        for(int n = 2; n <= r; n++) q.push_back(a[n] * q[n-1] + q[n-2]);
+        return std::make_pair(p[r], q[r]);
+    } else {
+        std::vector<T> p, q;
+        p.push_back(a[0]);
+        p.push_back(a[0]*a[1]+1);
+        q.push_back(1);
+        q.push_back(a[1]);
+        for(int n = 2; n <= 2*r+1; n++){
+            if(n <= r+1) p.push_back(a[n] * p[n-1] + p[n-2]);
+            else p.push_back(a[n-r-1]*p[n-1] + p[n-2]);
+        }
+        for(int n = 2; n <= 2*r+1; n++){
+            if(n <= r+1) q.push_back(a[n] * q[n-1] + q[n-2]);
+            else q.push_back(a[n-r-1]*q[n-1] + q[n-2]);
+        }
+        return std::make_pair(p[2*r+1], q[2*r+1]);
+    }
+
+}
