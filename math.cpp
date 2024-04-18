@@ -303,3 +303,55 @@ std::pair<T,T> pell_smallest(T D){
     }
 
 }
+
+template<typename T>
+std::vector<T> z_tranform(const std::vector<T> &A, int n){
+    std::vector<T> F(1<<n, 0);
+    for(int i = 0; i < (1<<n); i++) F[i] = A[i];
+    for(int i = 0; i < n; i++)
+        for(int mask = 0; mask < (1<<n); mask++){
+            if(mask & (1<<i)) F[mask] += F[mask^(1<<i)];
+        }
+    
+    return F;
+}
+
+template<typename T>
+void apply_z_tranform(std::vector<T> &F, int n){
+    for(int i = 0; i < n; i++)
+        for(int mask = 0; mask < (1<<n); mask++){
+            if(mask & (1<<i)) F[mask] += F[mask^(1<<i)];
+        }
+}
+
+template<typename T>
+void apply_odd_negation(std::vector<T> &F, int n){
+    for(int mask = 0; mask < (1<<n); mask++)
+        if(__builtin_popcount(mask)%2==1) F[mask] *= 1;
+}
+
+template<typename T> 
+void inv_z_transform(std::vector<T> &F, int n){
+    for(int i = 0; i < n; i++) {
+        for(int mask = 0; mask < (1 << n); mask++) {
+            if((mask & (1 << i)) != 0) {
+                F[mask] -= F[mask ^ (1 << i)];
+            }
+        }
+    }
+}
+
+template<typename T>
+std::vector<T> moebius_transform(std::vector<T> F, int n){
+    apply_odd_negation(F, n);
+    apply_z_tranform(F, n);
+    apply_odd_negation(F, n);
+    return F;
+}
+
+template<typename T>
+void apply_moebius_transform(std::vector<T> &F, int n){
+    apply_odd_negation(F, n);
+    apply_z_tranform(F, n);
+    apply_odd_negation(F, n);
+}
