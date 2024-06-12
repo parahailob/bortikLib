@@ -81,7 +81,7 @@ std::pair<std::vector<i32>, std::vector<i32>> bfs(const Graph<T> &G, int s){
     return std::make_pair(dist, parent);
 }
 
-// Disjoint Set: UnionFind Tree
+// Disjoint Set Union, aka UnionFind
 class UnionFind{
     private:
         std::vector<int> parent;
@@ -93,9 +93,17 @@ class UnionFind{
             siz = std::vector<int>(size+1, 0);
         }
 
+        // employs path compression speedup
         int root(int u){
+            int v = u;
+            while(parent[v] != -1){
+                v = parent[v];
+            }
+            int nxt = u;
             while(parent[u] != -1){
-                u = parent[u];
+                nxt = parent[u];
+                parent[u] = v;
+                u = nxt;
             }
             return u;
         }
@@ -121,7 +129,7 @@ class UnionFind{
 
 // Total length of edges in MST
 template<typename T>
-i64 MST_length(std::vector<Edge<T>> Edges, int N){
+long long MST_length(std::vector<Edge<T>> Edges, int N){
     std::sort(Edges.begin(), Edges.end(), [](const Edge<T>& lhs, const Edge<T>& rhs){ return lhs.weight < rhs.weight; });
     long long result = 0;
     UnionFind uf(N);

@@ -103,6 +103,7 @@ class RPSegTree{
             hold[u*2+1] = true;
             arr[u*2+1] = up(arr[u*2+1], arr[u]);
             hold[u] = false;
+            arr[u] = e();
         }
 
         T query(int u){
