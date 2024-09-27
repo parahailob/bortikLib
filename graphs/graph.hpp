@@ -90,7 +90,7 @@ class UnionFind{
     public:
         UnionFind(const int &size){
             parent = std::vector<int>(size+1, -1);
-            siz = std::vector<int>(size+1, 0);
+            siz = std::vector<int>(size+1, 1);
         }
 
         // employs path compression speedup
@@ -114,15 +114,20 @@ class UnionFind{
             if(RootU == RootV) return;
             if(siz[RootU] < siz[RootV]){
                 parent[RootU] = RootV;
-                siz[RootV] += siz[RootU] + 1;
+                siz[RootV] += siz[RootU];
             } else {
                 parent[RootV] = RootU;
-                siz[RootU] += siz[RootV] + 1;
+                siz[RootU] += siz[RootV];
             }
         }
 
         bool same(const int &u, const int &v){
             return root(u) == root(v);
+        }
+
+        // size of component
+        int size(const int &u){
+            return siz[root(u)];
         }
 };
 
