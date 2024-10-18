@@ -1,10 +1,13 @@
+#pragma once
 #include <bits/stdc++.h>
 
 namespace bortikLib {
 
-    std::vector<long long> divisors(long long n){
-        std::vector<long long> small;
-        std::vector<long long> big;
+    template<typename T>
+    std::vector<T> divisors(T n){
+        assert(std::is_integral_v<T>);
+        std::vector<T> small;
+        std::vector<T> big;
         int i = 1;
         for(i = 1; i < sqrt(n); i++){
             if(n % i == 0){
@@ -27,94 +30,6 @@ namespace bortikLib {
     }
 
 
-    void Extend (uint32_t w[], uint32_t &w_end, uint32_t &length, uint32_t n, bool d[], uint32_t &w_end_max) {
-        /* Rolls full wheel W up to n, and sets length=n */
-        uint32_t i, j, x;
-        i = 0; j = w_end;
-        x = length + 1; /* length+w[0] */
-        while (x <= n) {
-            w[++j] = x; /* Append x to the ordered set W */
-            d[x] = false;
-            x = length + w[++i];
-        }
-        length = n; w_end = j;
-        if (w_end > w_end_max) w_end_max = w_end;
-    }
-
-    void Delete (uint32_t w[], uint32_t length, uint32_t p, bool d[], uint32_t &imaxf) {
-        /* Deletes multiples p*w[i] of p from W, and sets imaxf to last i for deletion */
-        uint32_t i, x;
-        i = 0;
-        x = p; /* p*w[0]=p*1 */
-        while (x <= length) {
-            d[x] = true; /* Remove x from W; */
-            x = p*w[++i];
-        }
-        imaxf = i-1;
-    }
-
-    void Compress(uint32_t w[], bool d[], uint32_t to, uint32_t &w_end) {
-        /* Removes deleted values in w[0..to], and if to=w_end, updates w_end, otherwise pads with zeros on right */
-        uint32_t i, j;
-        j = 0;
-        for (i=1; i <= to; i++) {
-            if (!d[w[i]]) {
-                w[++j] = w[i];
-            }
-        }
-        if (to == w_end) {
-            w_end = j;
-        } else {
-            for (uint32_t k=j+1; k <= to; k++) w[k] = 0;
-        }
-    }
-
-    std::vector<uint32_t> Pritchard(uint32_t N) {
-        /* finds the nrPrimes primes up to N, printing them if printPrimes */
-        std::vector<uint32_t> result;
-        uint32_t *w = new uint32_t[N/4+5];
-        bool *d = new bool[N+1];
-        uint32_t w_end, length;
-        /* representation invariant (for the main loop): */
-        /* if length < N (so W is a complete wheel), w[0..w_end] is the ordered set W; */
-        /* otherwise, w[0..w_end], omitting zeros and values w with d[w] true, is the ordered set W, */
-        /* and no values <= N/p are omitted */
-        uint32_t w_end_max, p, imaxf;
-        /* W,k,length = {1},1,2: */
-        w_end = 0; w[0] = 1;
-        w_end_max = 0;
-        length = 2;
-        /* Pr = {2}: */
-        result.push_back(2);
-        p = 3;
-        /* invariant: p = p_(k+1) and W = W_k inter {1,...,N} and length = min(P_k,N) and Pr = the first k primes */
-        /* (where p_i denotes the i'th prime, W_i denotes the i'th wheel, P_i denotes the product of the first i primes) */
-        while (p*p <= N) {
-            /* Append p to Pr: */
-            result.push_back(p);
-            if (length < N) {
-                /* Extend W with length to minimum of p*length and N: */
-                Extend (w, w_end, length, std::min(p*length,N), d, w_end_max);
-            }
-            Delete(w, length, p, d, imaxf);
-            Compress(w, d, (length < N ? w_end : imaxf), w_end);
-            /* p = next(W, 1): */
-            p = w[1];
-            if (p == 0) break; /* next p is after zeroed section so is too big */
-            /* k++ */
-        }
-        if (length < N) {
-            /* Extend full wheel W,length to N: */
-            Extend (w, w_end, length, N, d, w_end_max);
-        }
-        /* gather remaining primes: */
-        for (uint32_t i=1; i <= w_end; i++) {
-            if (w[i] == 0 || d[w[i]]) continue;
-            result.push_back(w[i]);
-        }
-
-        return result;
-    }
 
     /*  prime_factor(n)
         入力：整数 n
@@ -168,190 +83,219 @@ namespace bortikLib {
         }
     };
 
-}
+    // https://cp-algorithms.com/algebra/prime-sieve-linear.html
+    // Linear prime sieve
+#if __cplusplus >= 202002L
+    template<std::integral T>
+#else 
+    template<typename T>
+#endif
+    std::vector<T> get_primes(int N){
+        assert(N >= 0);
+        assert(std::is_integral_v<T>);
+        std::vector<T> lp(N+1);
+        std::vector<T> pr;
 
-template<typename T> 
-unsigned long long inversion_merge_sort(vector<T> &arr, int l, int r){
-    unsigned long long ans = 0;
-    if(r - l < 2) return 0;
+        for (T i=2; i <= N; ++i) {
+            if (lp[i] == 0) {
+                lp[i] = i;
+                pr.push_back(i);
+            }
+            for (T j = 0; i * pr[j] <= N; ++j) {
+                lp[i * pr[j]] = pr[j];
+                if (pr[j] == lp[i]) {
+                    break;
+                }
+            }
+        }
 
-    int mid = (r + l)/2;
-    ans += inversion_merge_sort(arr, l, mid);
-    ans += inversion_merge_sort(arr, mid, r);
+        return pr;
+    }
 
-    int n = r-l;
-    vector<T> sorted(n);
-    int k1 = l;
-    int k2 = mid;
-    int idx = 0;
-    while(k1 < mid && k2 < r){
-        if(arr[k2] < arr[k1]){
-            ans += mid - k1;
-            sorted[idx] = arr[k2];
-            k2++;
+    template<typename T> 
+    unsigned long long inversion_merge_sort(std::vector<T> &arr, int l, int r){
+        unsigned long long ans = 0;
+        if(r - l < 2) return 0;
+
+        int mid = (r + l)/2;
+        ans += inversion_merge_sort(arr, l, mid);
+        ans += inversion_merge_sort(arr, mid, r);
+
+        int n = r-l;
+        std::vector<T> sorted(n);
+        int k1 = l;
+        int k2 = mid;
+        int idx = 0;
+        while(k1 < mid && k2 < r){
+            if(arr[k2] < arr[k1]){
+                ans += mid - k1;
+                sorted[idx] = arr[k2];
+                k2++;
+            } else {
+                sorted[idx] = arr[k1];
+                k1++;
+            }
+            idx++;
+        }
+        if(k1 < mid){
+            for(int i = k1; i < mid; i++){
+                sorted[idx] = arr[i];
+                idx++;
+            }
         } else {
-            sorted[idx] = arr[k1];
-            k1++;
+            for(int i = k2; i < r; i++){
+                sorted[idx] = arr[i];
+                idx++;
+            }
         }
-        idx++;
-    }
-    if(k1 < mid){
-        for(int i = k1; i < mid; i++){
-            sorted[idx] = arr[i];
-            idx++;
+        for(int i = 0; i < n; i++){
+            arr[l+i] = sorted[i];
         }
-    } else {
-        for(int i = k2; i < r; i++){
-            sorted[idx] = arr[i];
-            idx++;
+        return ans;
+    }
+
+    template<typename T>
+    unsigned long long num_inv(std::vector<T> a){
+        return inversion_merge_sort<T>(a, 0, a.size());
+    }
+
+
+    long long grey_code(long long pos, int n){
+        long long ans = 0;
+        for(int j = n-1; j >= 0; j--) if(pos & (1 << j)) ans |= (1 << j), pos = (1 << (j+1))-1 - pos;
+        return ans;
+    }
+
+    long long grey_reverse(long long val){
+        long long k = 0;
+        long long order = 0;
+        for(int j = 61; j >= 0; j--) {k |= (val & (1 << j)) ^ (order << j); order ^= (val >> j) & 1;}
+        return k;
+    }
+
+    template<typename T>
+    struct Combinatorics {
+        std::vector<T> fact;
+
+        Combinatorics(int n) {
+            fact.assign(n+1);
+            fact[0] = T{1};
+            fact[1] = T{1};
+            for(int i = 2; i <= n; i++){
+                fact[i] = fact[i-1] * T{i};
+            }
         }
-    }
-    for(int i = 0; i < n; i++){
-        arr[l+i] = sorted[i];
-    }
-    return ans;
-}
 
-template<typename T>
-unsigned long long num_inv(vector<T> a){
-    return inversion_merge_sort(a, 0, a.size());
-}
-
-
-long long grey_code(long long pos, int n){
-    long long ans = 0;
-    for(int j = n-1; j >= 0; j--) if(pos & (1 << j)) ans |= (1 << j), pos = (1 << (j+1))-1 - pos;
-    return ans;
-}
-
-long long grey_reverse(long long val){
-    long long k = 0;
-    long long order = 0;
-    for(int j = 61; j >= 0; j--) {k |= (val & (1 << j)) ^ (order << j); order ^= (val >> j) & 1;}
-    return k;
-}
-
-template<typename T>
-struct Combinatorics {
-    vector<T> fact;
-
-    Comb(int n) {
-        fact.assign(n+1);
-        fact[0] = T{1};
-        fact[1] = T{1};
-        for(int i = 2; i <= n; i++){
-            fact[i] = fact[i-1] * T{i};
+        T comb(int n, int r){
+            return fact[n] / (fact[r] * fact[n-r]);
         }
-    }
 
-    T comb(int n, int r){
-        return fact[n] / (fact[r] * fact[n-r]);
-    }
-
-    T perm(int n){
-        return fact[n];
-    }
-};
+        T perm(int n){
+            return fact[n];
+        }
+    };
 
 
-// returns a vector [a0; a1, ...] of repeated infinite fraction of sqrt(D)
-template<typename T>
-std::vector<T> continued_fraction(T D){
-    std::vector<T> a, p, q, P, Q;
-    a.push_back(T(sqrt(D)));
-    p.push_back(a[0]);
-    q.push_back(0);
-    P.push_back(0);
-    Q.push_back(1);
-    while(a.back() != a[0]*2){
-        P.push_back(a.back()*Q.back()-P.back());
-        Q.push_back((D-P.back()*P.back())/Q.back());
-        a.push_back((a[0]+P.back())/Q.back());
-    }
-    return a;
-}
-
-// the solution to Pell`s Equation in smallest integers
-template<typename T>
-std::pair<T,T> pell_smallest(T D){
-    auto a = continued_fraction(D);
-    int r = a.size()-2;
-    if(r%2==1){
-        std::vector<T> p, q;
+    // returns a vector [a0; a1, ...] of repeated infinite fraction of sqrt(D)
+    template<typename T>
+    std::vector<T> continued_fraction(T D){
+        std::vector<T> a, p, q, P, Q;
+        a.push_back(T(sqrt(D)));
         p.push_back(a[0]);
-        p.push_back(a[0]*a[1]+1);
-        q.push_back(1);
-        q.push_back(a[1]);
-        for(int n = 2; n <= r; n++) p.push_back(a[n] * p[n-1] + p[n-2]);
-        for(int n = 2; n <= r; n++) q.push_back(a[n] * q[n-1] + q[n-2]);
-        return std::make_pair(p[r], q[r]);
-    } else {
-        std::vector<T> p, q;
-        p.push_back(a[0]);
-        p.push_back(a[0]*a[1]+1);
-        q.push_back(1);
-        q.push_back(a[1]);
-        for(int n = 2; n <= 2*r+1; n++){
-            if(n <= r+1) p.push_back(a[n] * p[n-1] + p[n-2]);
-            else p.push_back(a[n-r-1]*p[n-1] + p[n-2]);
+        q.push_back(0);
+        P.push_back(0);
+        Q.push_back(1);
+        while(a.back() != a[0]*2){
+            P.push_back(a.back()*Q.back()-P.back());
+            Q.push_back((D-P.back()*P.back())/Q.back());
+            a.push_back((a[0]+P.back())/Q.back());
         }
-        for(int n = 2; n <= 2*r+1; n++){
-            if(n <= r+1) q.push_back(a[n] * q[n-1] + q[n-2]);
-            else q.push_back(a[n-r-1]*q[n-1] + q[n-2]);
-        }
-        return std::make_pair(p[2*r+1], q[2*r+1]);
+        return a;
     }
 
-}
-
-template<typename T>
-std::vector<T> z_tranform(const std::vector<T> &A, int n){
-    std::vector<T> F(1<<n, 0);
-    for(int i = 0; i < (1<<n); i++) F[i] = A[i];
-    for(int i = 0; i < n; i++)
-        for(int mask = 0; mask < (1<<n); mask++){
-            if(mask & (1<<i)) F[mask] += F[mask^(1<<i)];
+    // the solution to Pell`s Equation in smallest integers
+    template<typename T>
+    std::pair<T,T> pell_smallest(T D){
+        auto a = continued_fraction(D);
+        int r = a.size()-2;
+        if(r%2==1){
+            std::vector<T> p, q;
+            p.push_back(a[0]);
+            p.push_back(a[0]*a[1]+1);
+            q.push_back(1);
+            q.push_back(a[1]);
+            for(int n = 2; n <= r; n++) p.push_back(a[n] * p[n-1] + p[n-2]);
+            for(int n = 2; n <= r; n++) q.push_back(a[n] * q[n-1] + q[n-2]);
+            return std::make_pair(p[r], q[r]);
+        } else {
+            std::vector<T> p, q;
+            p.push_back(a[0]);
+            p.push_back(a[0]*a[1]+1);
+            q.push_back(1);
+            q.push_back(a[1]);
+            for(int n = 2; n <= 2*r+1; n++){
+                if(n <= r+1) p.push_back(a[n] * p[n-1] + p[n-2]);
+                else p.push_back(a[n-r-1]*p[n-1] + p[n-2]);
+            }
+            for(int n = 2; n <= 2*r+1; n++){
+                if(n <= r+1) q.push_back(a[n] * q[n-1] + q[n-2]);
+                else q.push_back(a[n-r-1]*q[n-1] + q[n-2]);
+            }
+            return std::make_pair(p[2*r+1], q[2*r+1]);
         }
-    
-    return F;
-}
 
-template<typename T>
-void apply_z_tranform(std::vector<T> &F, int n){
-    for(int i = 0; i < n; i++)
-        for(int mask = 0; mask < (1<<n); mask++){
-            if(mask & (1<<i)) F[mask] += F[mask^(1<<i)];
-        }
-}
+    }
 
-template<typename T>
-void apply_odd_negation(std::vector<T> &F, int n){
-    for(int mask = 0; mask < (1<<n); mask++)
-        if(__builtin_popcount(mask)%2==1) F[mask] *= 1;
-}
+    template<typename T>
+    std::vector<T> z_tranform(const std::vector<T> &A, int n){
+        std::vector<T> F(1<<n, 0);
+        for(int i = 0; i < (1<<n); i++) F[i] = A[i];
+        for(int i = 0; i < n; i++)
+            for(int mask = 0; mask < (1<<n); mask++){
+                if(mask & (1<<i)) F[mask] += F[mask^(1<<i)];
+            }
+        
+        return F;
+    }
 
-template<typename T> 
-void inv_z_transform(std::vector<T> &F, int n){
-    for(int i = 0; i < n; i++) {
-        for(int mask = 0; mask < (1 << n); mask++) {
-            if((mask & (1 << i)) != 0) {
-                F[mask] -= F[mask ^ (1 << i)];
+    template<typename T>
+    void apply_z_tranform(std::vector<T> &F, int n){
+        for(int i = 0; i < n; i++)
+            for(int mask = 0; mask < (1<<n); mask++){
+                if(mask & (1<<i)) F[mask] += F[mask^(1<<i)];
+            }
+    }
+
+    template<typename T>
+    void apply_odd_negation(std::vector<T> &F, int n){
+        for(int mask = 0; mask < (1<<n); mask++)
+            if(__builtin_popcount(mask)%2==1) F[mask] *= 1;
+    }
+
+    template<typename T> 
+    void inv_z_transform(std::vector<T> &F, int n){
+        for(int i = 0; i < n; i++) {
+            for(int mask = 0; mask < (1 << n); mask++) {
+                if((mask & (1 << i)) != 0) {
+                    F[mask] -= F[mask ^ (1 << i)];
+                }
             }
         }
     }
-}
 
-template<typename T>
-std::vector<T> moebius_transform(std::vector<T> F, int n){
-    apply_odd_negation(F, n);
-    apply_z_tranform(F, n);
-    apply_odd_negation(F, n);
-    return F;
-}
+    template<typename T>
+    std::vector<T> moebius_transform(std::vector<T> F, int n){
+        apply_odd_negation(F, n);
+        apply_z_tranform(F, n);
+        apply_odd_negation(F, n);
+        return F;
+    }
 
-template<typename T>
-void apply_moebius_transform(std::vector<T> &F, int n){
-    apply_odd_negation(F, n);
-    apply_z_tranform(F, n);
-    apply_odd_negation(F, n);
+    template<typename T>
+    void apply_moebius_transform(std::vector<T> &F, int n){
+        apply_odd_negation(F, n);
+        apply_z_tranform(F, n);
+        apply_odd_negation(F, n);
+    }
+
 }
